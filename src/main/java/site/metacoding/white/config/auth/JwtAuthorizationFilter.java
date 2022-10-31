@@ -71,5 +71,4 @@ public class JwtAuthorizationFilter implements Filter {
         out.println(body);
         out.flush();
     }
-
 }

@@ -1,5 +1,12 @@
 package site.metacoding.white.web;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +19,6 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,155 +44,156 @@ import site.metacoding.white.util.SHA256;
 @SpringBootTest(webEnvironment = WebEnvironment.MOCK) // 가짜 환경으로 실행
 public class BoardApiControllerTest {
 
-    private static final String APPLICATION_JSON = "application/json; charset=utf-8";
+        private static final String APPLICATION_JSON = "application/json; charset=utf-8";
 
-    @Autowired
-    private MockMvc mvc;
+        @Autowired
+        private MockMvc mvc;
 
-    @Autowired
-    private ObjectMapper om;
+        @Autowired
+        private ObjectMapper om;
 
-    @Autowired
-    private UserRepository userRepository;
+        @Autowired
+        private UserRepository userRepository;
 
-    @Autowired
-    private BoardRepository boardRepository;
+        @Autowired
+        private BoardRepository boardRepository;
 
-    @Autowired
-    private CommentRepository commentRepository;
+        @Autowired
+        private CommentRepository commentRepository;
 
-    @Autowired
-    private SHA256 sha256;
+        @Autowired
+        private SHA256 sha256;
 
-    private MockHttpSession session;
+        private MockHttpSession session;
 
-    @BeforeEach
-    public void sessionInit() {
-        session = new MockHttpSession();
-        User user = User.builder().id(1L).username("ssar").build();
-        session.setAttribute("sessionUser", new SessionUser(user));
-    }
+        @BeforeEach
+        public void sessionInit() {
+                session = new MockHttpSession();
+                User user = User.builder().id(1L).username("ssar").build();
+                session.setAttribute("sessionUser", new SessionUser(user));
+        }
 
-    @BeforeEach
-    public void dataInit() {
-        String encPassword = sha256.encrypt("1234");
-        User user = User.builder().username("ssar").password(encPassword).build();
-        User userPS = userRepository.save(user);
+        @BeforeEach
+        public void dataInit() {
+                String encPassword = sha256.encrypt("1234");
+                User user = User.builder().username("ssar").password(encPassword).build();
+                User userPS = userRepository.save(user);
 
-        Board board = Board.builder()
-                .title("스프링1강")
-                .content("트랜잭션관리")
-                .user(userPS)
-                .build();
-        Board boardPS = boardRepository.save(board);
+                Board board = Board.builder()
+                                .title("스프링1강")
+                                .content("트랜잭션관리")
+                                .user(userPS)
+                                .build();
+                Board boardPS = boardRepository.save(board);
 
-        Comment comment1 = Comment.builder()
-                .content("내용좋아요")
-                .board(boardPS)
-                .user(userPS)
-                .build();
+                Comment comment1 = Comment.builder()
+                                .content("내용좋아요")
+                                .board(boardPS)
+                                .user(userPS)
+                                .build();
 
-        Comment comment2 = Comment.builder()
-                .content("내용싫어요")
-                .board(boardPS)
-                .user(userPS)
-                .build();
+                Comment comment2 = Comment.builder()
+                                .content("내용싫어요")
+                                .board(boardPS)
+                                .user(userPS)
+                                .build();
 
-        commentRepository.save(comment1);
-        commentRepository.save(comment2);
-    }
+                commentRepository.save(comment1);
+                commentRepository.save(comment2);
+        }
 
-    @Test
-    public void save_test() throws Exception {
-        // given
-        BoardSaveReqDto boardSaveReqDto = new BoardSaveReqDto();
-        boardSaveReqDto.setTitle("스프링1강");
-        boardSaveReqDto.setContent("트랜잭션관리");
+        @Test
+        public void save_test() throws Exception {
+                // given
+                BoardSaveReqDto boardSaveReqDto = new BoardSaveReqDto();
+                boardSaveReqDto.setTitle("스프링1강");
+                boardSaveReqDto.setContent("트랜잭션관리");
 
-        String body = om.writeValueAsString(boardSaveReqDto);
+                String body = om.writeValueAsString(boardSaveReqDto);
 
-        // when
-        ResultActions resultActions = mvc
-                .perform(MockMvcRequestBuilders.post("/board").content(body)
-                        .contentType(APPLICATION_JSON).accept(APPLICATION_JSON)
-                        .session(session));
+                // when
+                ResultActions resultActions = mvc
+                                .perform(post("/board").content(body)
+                                                .contentType(APPLICATION_JSON).accept(APPLICATION_JSON)
+                                                .session(session));
 
-        // then
-        MvcResult mvcResult = resultActions.andReturn();
-        System.out.println("디버그 : " + mvcResult.getResponse().getContentAsString());
-        resultActions.andExpect(MockMvcResultMatchers.jsonPath("$.code").value(1L));
-    }
+                // then
+                MvcResult mvcResult = resultActions.andReturn();
+                System.out.println("디버그 : " + mvcResult.getResponse().getContentAsString());
+                resultActions.andExpect(jsonPath("$.code").value(1L));
+        }
 
-    @Test
-    public void findById_test() throws Exception {
-        // given
-        Long id = 1L;
+        @Test
+        public void findById_test() throws Exception {
+                // given
+                Long id = 1L;
 
-        // when
-        ResultActions resultActions = mvc
-                .perform(MockMvcRequestBuilders.get("/board/" + id).accept(APPLICATION_JSON));
+                // when
+                ResultActions resultActions = mvc
+                                .perform(get("/board/" + id).accept(APPLICATION_JSON));
 
-        // then
-        MvcResult mvcResult = resultActions.andReturn();
-        System.out.println("디버그 : " + mvcResult.getResponse().getContentAsString());
-        resultActions.andExpect(MockMvcResultMatchers.status().isOk());
-        resultActions.andExpect(MockMvcResultMatchers.jsonPath("$.data.title").value("스프링1강"));
-    }
+                // then
+                MvcResult mvcResult = resultActions.andReturn();
+                log.debug("디버그 : " + mvcResult.getResponse().getContentAsString());
+                resultActions.andExpect(status().isOk());
+                resultActions.andExpect(jsonPath("$.data.title").value("스프링1강"));
+        }
 
-    @Test
-    public void findAll_test() throws Exception {
-        // given
+        @Test
+        public void findAll_test() throws Exception {
+                // given
 
-        // when
-        ResultActions resultActions = mvc
-                .perform(MockMvcRequestBuilders.get("/board").accept(APPLICATION_JSON));
+                // when
+                ResultActions resultActions = mvc
+                                .perform(get("/board").accept(APPLICATION_JSON));
 
-        // then
-        MvcResult mvcResult = resultActions.andReturn();
-        System.out.println("디버그 : " + mvcResult.getResponse().getContentAsString());
-        resultActions.andExpect(MockMvcResultMatchers.status().isOk());
-        resultActions.andExpect(MockMvcResultMatchers.jsonPath("$.code").value(1L));
-        resultActions.andExpect(MockMvcResultMatchers.jsonPath("$.data.[0].title").value("스프링1강"));
-    }
+                // then
+                MvcResult mvcResult = resultActions.andReturn();
+                System.out.println("디버그 : " + mvcResult.getResponse().getContentAsString());
+                resultActions.andExpect(status().isOk());
+                resultActions.andExpect(jsonPath("$.code").value(1L));
+                resultActions.andExpect(jsonPath("$.data.[0].title").value("스프링1강"));
+        }
 
-    @Test
-    public void update_test() throws Exception {
-        // given
-        Long id = 1L;
-        BoardUpdateReqDto boardUpdateReqDto = new BoardUpdateReqDto();
-        boardUpdateReqDto.setTitle("스프링2강");
-        boardUpdateReqDto.setContent("JUNIT공부");
+        @Test
+        public void update_test() throws Exception {
+                // given
+                Long id = 1L;
+                BoardUpdateReqDto boardUpdateReqDto = new BoardUpdateReqDto();
+                boardUpdateReqDto.setTitle("스프링2강");
+                boardUpdateReqDto.setContent("JUNIT공부");
 
-        String body = om.writeValueAsString(boardUpdateReqDto);
+                String body = om.writeValueAsString(boardUpdateReqDto);
 
-        // when
-        ResultActions resultActions = mvc
-                .perform(MockMvcRequestBuilders.put("/board/" + id).content(body)
-                        .contentType(APPLICATION_JSON).accept(APPLICATION_JSON)
-                        .session(session));
+                // when
+                ResultActions resultActions = mvc
+                                .perform(put("/board/" + id).content(body)
+                                                .contentType(APPLICATION_JSON).accept(APPLICATION_JSON)
+                                                .session(session));
 
-        // then
-        MvcResult mvcResult = resultActions.andReturn();
-        System.out.println("디버그 : " + mvcResult.getResponse().getContentAsString());
-        resultActions.andExpect(MockMvcResultMatchers.jsonPath("$.code").value(1L));
-        resultActions.andExpect(MockMvcResultMatchers.jsonPath("$.data.title").value("스프링2강"));
-    }
+                // then
+                MvcResult mvcResult = resultActions.andReturn();
+                System.out.println("디버그 : " + mvcResult.getResponse().getContentAsString());
+                resultActions.andExpect(jsonPath("$.code").value(1L));
+                resultActions.andExpect(jsonPath("$.data.title").value("스프링2강"));
+        }
 
-    @Test
-    public void deleteById_test() throws Exception {
-        // given
-        Long id = 1L;
+        @Test
+        public void deleteById_test() throws Exception {
+                // given
+                Long id = 1L;
 
-        // when
-        ResultActions resultActions = mvc
-                .perform(MockMvcRequestBuilders.delete("/board/" + id)
-                        .accept(APPLICATION_JSON)
-                        .session(session));
+                // when
+                ResultActions resultActions = mvc
+                                .perform(delete("/board/" + id)
+                                                .accept(APPLICATION_JSON)
+                                                .session(session));
 
-        // then
-        MvcResult mvcResult = resultActions.andReturn();
-        log.debug("디버그 : " + mvcResult.getResponse().getContentAsString());
-        resultActions.andExpect(MockMvcResultMatchers.jsonPath("$.code").value(1L));
+                // then
+                MvcResult mvcResult = resultActions.andReturn();
+                log.debug("디버그 : " + mvcResult.getResponse().getContentAsString());
+                resultActions.andExpect(MockMvcResultMatchers.jsonPath("$.code").value(1L));
 
-    }
+        }
+
 }
