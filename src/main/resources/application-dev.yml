@@ -23,5 +23,6 @@ spring:
 logging:
   level:
     '[org.hibernate.SQL]': DEBUG
+    '[site.metacoding.white]': DEBUG #패키지단위로 걸기
     #root: DEBUG
 
