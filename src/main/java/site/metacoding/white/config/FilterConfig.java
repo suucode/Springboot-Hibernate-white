@@ -1,52 +1,40 @@
 package site.metacoding.white.config;
 
-import java.io.IOException;
-
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import site.metacoding.white.config.auth.JwtAuthenticationFilter;
+import site.metacoding.white.config.auth.JwtAuthorizationFilter;
+import site.metacoding.white.domain.UserRepository;
 
 @Slf4j
+@RequiredArgsConstructor
 @Configuration // IoC 컨테이너에 등록
 public class FilterConfig {
 
+    private final UserRepository userRepository; // DI (스프링의 IoC 컨테이너에서 옴)
+
     // 서버 실행시 IoC 등록
     @Bean
-    public FilterRegistrationBean<HelloFilter> jwtAuthenticationFilterRegister() {
+    public FilterRegistrationBean<JwtAuthenticationFilter> jwtAuthenticationFilterRegister() {
         log.debug("디버그 : 인증필터등록");
-        FilterRegistrationBean<HelloFilter> bean = new FilterRegistrationBean<>(new HelloFilter());
-        bean.addUrlPatterns("/hello"); // /hello라는 주소가 오면 필터가 실행됨
+        FilterRegistrationBean<JwtAuthenticationFilter> bean = new FilterRegistrationBean<>(
+                new JwtAuthenticationFilter(userRepository)); // 서버가 실행될 때 필터에게 userRepository를 넘겨줄 수 있게됨
+        bean.addUrlPatterns("/login"); // /hello라는 주소가 오면 필터가 실행됨
+        bean.setOrder(1); // 인증필터가 1번째로 실행됨
         return bean;
     }
-}
 
-@Slf4j
-class HelloFilter implements Filter {
-
-    // /hello 요청시 실행
-    @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-            throws IOException, ServletException {
-        HttpServletRequest req = (HttpServletRequest) request;
-        HttpServletResponse resp = (HttpServletResponse) response; // 다운캐스팅 해야 쓸 수 있다
-
-        if (req.getMethod().equals("POST")) {
-            log.debug("디버그 : HelloFilter 실행됨");
-        } else {
-            log.debug("디버그 : POST요청이 아니어서 실행할 수 없습니다");
-        }
-
-        // chain.doFilter(request, response);
+    @Bean
+    public FilterRegistrationBean<JwtAuthorizationFilter> jwtAuthorizationFilterRegister() {
+        log.debug("디버그 : 인가필터등록"); // 권한체크
+        FilterRegistrationBean<JwtAuthorizationFilter> bean = new FilterRegistrationBean<>(
+                new JwtAuthorizationFilter());
+        bean.addUrlPatterns("/s/*"); // 원래 *은 2개달아야하는데 얘만 예외
+        bean.setOrder(2); // 인가필터가 2번째로 실행됨
+        return bean;
     }
-
 }
